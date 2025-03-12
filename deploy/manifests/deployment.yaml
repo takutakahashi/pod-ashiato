@@ -52,7 +52,7 @@ spec:
         # Uncomment and modify these to use filters
         # - --namespace=default
         # - --label=app=nginx,tier=frontend
-        # - --name=specific-pod-name
+        # - --name=frontend-  # Will match all pods with names starting with "frontend-"
         resources:
           requests:
             cpu: 100m

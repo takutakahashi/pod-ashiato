@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -76,15 +77,8 @@ func (c *PodController) RunOnce(ctx context.Context) error {
 
 // logPodNodeInfo はフィルター条件に一致するPodのノード情報をログに出力します
 func (c *PodController) logPodNodeInfo(ctx context.Context) error {
-	// フィールドセレクターの構築
-	fieldSelector := ""
-	if c.podName != "" {
-		fieldSelector = fmt.Sprintf("metadata.name=%s", c.podName)
-	}
-
 	// ListOptionsの構築
 	listOptions := metav1.ListOptions{
-		FieldSelector: fieldSelector,
 		LabelSelector: c.labelSelector,
 	}
 
@@ -94,15 +88,28 @@ func (c *PodController) logPodNodeInfo(ctx context.Context) error {
 		return fmt.Errorf("failed to list pods: %w", err)
 	}
 
-	if len(pods.Items) == 0 {
+	filteredPods := []corev1.Pod{}
+	
+	// フィルタリング処理（podNameはプレフィックスマッチ）
+	if c.podName != "" {
+		for _, pod := range pods.Items {
+			if strings.HasPrefix(pod.Name, c.podName) {
+				filteredPods = append(filteredPods, pod)
+			}
+		}
+	} else {
+		filteredPods = pods.Items
+	}
+
+	if len(filteredPods) == 0 {
 		c.logger.Info("No pods found matching the specified filters",
 			zap.String("namespace", c.namespace),
-			zap.String("podName", c.podName),
+			zap.String("podNamePrefix", c.podName),
 			zap.String("labelSelector", c.labelSelector))
 		return nil
 	}
 
-	for _, pod := range pods.Items {
+	for _, pod := range filteredPods {
 		info := c.createPodInfo(&pod)
 		
 		// 構造化ログ出力

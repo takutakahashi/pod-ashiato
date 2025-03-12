@@ -35,7 +35,7 @@ func init() {
 	flag.DurationVar(&interval, "interval", 30*time.Second, "interval between pod checks")
 	flag.BoolVar(&oneshot, "oneshot", false, "run only once and exit")
 	flag.StringVar(&namespace, "namespace", "", "filter pods by namespace (default: all namespaces)")
-	flag.StringVar(&podName, "name", "", "filter pods by name")
+	flag.StringVar(&podName, "name", "", "filter pods by name prefix")
 	flag.StringVar(&labelSelector, "label", "", "filter pods by label selector (e.g. 'app=nginx,env=prod')")
 }
 
@@ -76,7 +76,7 @@ func main() {
 	if namespace != "" || podName != "" || labelSelector != "" {
 		logger.Info("Using pod filters", 
 			zap.String("namespace", namespace),
-			zap.String("podName", podName),
+			zap.String("podNamePrefix", podName),
 			zap.String("labelSelector", labelSelector))
 	}
 

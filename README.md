@@ -32,8 +32,11 @@ From your local machine:
 # Filter pods by namespace
 ./pod-ashiato --namespace kube-system
 
-# Filter pods by name
-./pod-ashiato --name nginx-pod-1
+# Filter pods by name prefix (matches all pods starting with "nginx-")
+./pod-ashiato --name nginx-
+
+# Filter pods by name prefix (matches all pods starting with "app-backend-")
+./pod-ashiato --name app-backend-
 
 # Filter pods by label
 ./pod-ashiato --label app=nginx,env=production
@@ -75,7 +78,7 @@ You can also check the `deploy` directory for example manifests.
 - `--interval`: Interval between pod checks (default: 30s)
 - `--oneshot`: Run only once and exit (default: false)
 - `--namespace`: Filter pods by namespace (default: all namespaces)
-- `--name`: Filter pods by name (exact match)
+- `--name`: Filter pods by name prefix (matches pods starting with the specified string)
 - `--label`: Filter pods by label selector (e.g., 'app=nginx,env=prod')
 
 ## Output Format
