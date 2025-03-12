@@ -43,6 +43,12 @@ From your local machine:
 
 # Combine filters
 ./pod-ashiato --namespace default --label app=backend --interval 2m
+
+# Store pod-to-node mapping in ConfigMaps (created in default namespace)
+./pod-ashiato --store-in-cm
+
+# Store mappings in a specific namespace
+./pod-ashiato --store-in-cm --cm-namespace monitoring
 ```
 
 ### In a Kubernetes Cluster
@@ -80,6 +86,8 @@ You can also check the `deploy` directory for example manifests.
 - `--namespace`: Filter pods by namespace (default: all namespaces)
 - `--name`: Filter pods by name prefix (matches pods starting with the specified string)
 - `--label`: Filter pods by label selector (e.g., 'app=nginx,env=prod')
+- `--store-in-cm`: Store pod-to-node mapping in ConfigMaps (default: false)
+- `--cm-namespace`: Namespace where ConfigMaps will be created (default: `default`)
 
 ## Output Format
 
@@ -107,3 +115,26 @@ The tool outputs JSON logs to stdout with the following structure:
 
 - [Architecture](ARCH.md) - Technical architecture and design decisions
 - [Release Process](docs/RELEASE.md) - How releases are managed and automated
+
+## ConfigMap Storage
+
+When the `--store-in-cm` flag is enabled, Pod Ashiato will store pod-to-node mapping information in ConfigMaps:
+
+- ConfigMaps are created with the name pattern `pod-ashiato-YYYYMMDDHH` (where YYYY=year, MM=month, DD=day, HH=hour)
+- A new ConfigMap is created every hour
+- Each ConfigMap contains data in the format `namespace_podname: nodename` (using underscore as separator for Kubernetes compatibility)
+- ConfigMaps are labeled with `app: pod-ashiato` and `type: pod-node-mapping`
+- By default, ConfigMaps are created in the `default` namespace, but this can be changed with `--cm-namespace`
+
+You can retrieve the stored mapping information with:
+
+```bash
+kubectl get cm -l app=pod-ashiato
+kubectl get cm pod-ashiato-2023010112 -o yaml
+```
+
+This feature is useful for:
+
+- Historical tracking of pod placement
+- Audit and compliance purposes
+- Integration with other tools that can consume ConfigMap data

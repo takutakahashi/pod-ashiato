@@ -24,6 +24,8 @@ var (
 	namespace     string
 	podName       string
 	labelSelector string
+	storeInCM     bool
+	cmNamespace   string
 )
 
 func init() {
@@ -37,6 +39,8 @@ func init() {
 	flag.StringVar(&namespace, "namespace", "", "filter pods by namespace (default: all namespaces)")
 	flag.StringVar(&podName, "name", "", "filter pods by name prefix")
 	flag.StringVar(&labelSelector, "label", "", "filter pods by label selector (e.g. 'app=nginx,env=prod')")
+	flag.BoolVar(&storeInCM, "store-in-cm", false, "store pod-to-node mapping in ConfigMaps")
+	flag.StringVar(&cmNamespace, "cm-namespace", "default", "namespace where ConfigMaps will be created")
 }
 
 func main() {
@@ -70,7 +74,16 @@ func main() {
 	}
 
 	// コントローラーの初期化
-	podController := controller.NewPodController(clientset, logger, interval, namespace, podName, labelSelector)
+	podController := controller.NewPodController(
+		clientset, 
+		logger, 
+		interval, 
+		namespace, 
+		podName, 
+		labelSelector,
+		storeInCM,
+		cmNamespace,
+	)
 
 	// ログフィルター情報
 	if namespace != "" || podName != "" || labelSelector != "" {
@@ -78,6 +91,13 @@ func main() {
 			zap.String("namespace", namespace),
 			zap.String("podNamePrefix", podName),
 			zap.String("labelSelector", labelSelector))
+	}
+
+	// ConfigMap に保存する場合は追加情報をログ出力
+	if storeInCM {
+		logger.Info("Pod information will be stored in ConfigMaps",
+			zap.String("cmNamespace", cmNamespace),
+			zap.String("cmNamePattern", "pod-ashiato-YYYYMMDDHH"))
 	}
 
 	// シグナルハンドリングの設定

@@ -15,12 +15,15 @@ import (
 
 // PodController はPodの情報を収集・記録するコントローラーです
 type PodController struct {
-	clientset  *kubernetes.Clientset
-	logger     *zap.Logger
-	interval   time.Duration
-	namespace  string
-	podName    string
+	clientset     *kubernetes.Clientset
+	logger        *zap.Logger
+	interval      time.Duration
+	namespace     string
+	podName       string
 	labelSelector string
+	cmStore       *ConfigMapStore
+	storeInCM     bool
+	cmNamespace   string
 }
 
 // PodInfo はPodのノード情報を含む構造体です
@@ -42,15 +45,31 @@ type PodCondition struct {
 }
 
 // NewPodController は新しいPodControllerを作成します
-func NewPodController(clientset *kubernetes.Clientset, logger *zap.Logger, interval time.Duration, namespace string, podName string, labelSelector string) *PodController {
-	return &PodController{
+func NewPodController(clientset *kubernetes.Clientset, logger *zap.Logger, interval time.Duration, 
+	namespace string, podName string, labelSelector string, storeInCM bool, cmNamespace string) *PodController {
+
+	pc := &PodController{
 		clientset:     clientset,
 		logger:        logger,
 		interval:      interval,
 		namespace:     namespace,
 		podName:       podName,
 		labelSelector: labelSelector,
+		storeInCM:     storeInCM,
+		cmNamespace:   cmNamespace,
 	}
+
+	// ConfigMapへの保存が有効な場合はCMStoreを初期化
+	if storeInCM {
+		// CMの作成先namespace
+		ns := cmNamespace
+		if ns == "" {
+			ns = "default"
+		}
+		pc.cmStore = NewConfigMapStore(clientset, logger, ns)
+	}
+
+	return pc
 }
 
 // Run はコントローラーの実行を開始します
@@ -111,6 +130,16 @@ func (c *PodController) logPodNodeInfo(ctx context.Context) error {
 
 	for _, pod := range filteredPods {
 		info := c.createPodInfo(&pod)
+		
+		// ConfigMapに保存する
+		if c.storeInCM && c.cmStore != nil {
+			podKey := fmt.Sprintf("%s_%s", pod.Namespace, pod.Name)
+			if err := c.cmStore.Store(ctx, podKey, pod.Spec.NodeName); err != nil {
+				c.logger.Error("Failed to store pod info in ConfigMap", 
+					zap.String("pod", fmt.Sprintf("%s/%s", pod.Namespace, pod.Name)),
+					zap.Error(err))
+			}
+		}
 		
 		// 構造化ログ出力
 		jsonData, err := json.Marshal(info)
