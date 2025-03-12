@@ -49,6 +49,10 @@ spec:
         image: ghcr.io/takutakahashi/pod-ashiato:latest  # Use the published image
         args:
         - --interval=1m
+        # Uncomment and modify these to use filters
+        # - --namespace=default
+        # - --label=app=nginx,tier=frontend
+        # - --name=specific-pod-name
         resources:
           requests:
             cpu: 100m

@@ -28,6 +28,18 @@ From your local machine:
 
 # Run continuously with 1 minute interval
 ./pod-ashiato --interval 1m
+
+# Filter pods by namespace
+./pod-ashiato --namespace kube-system
+
+# Filter pods by name
+./pod-ashiato --name nginx-pod-1
+
+# Filter pods by label
+./pod-ashiato --label app=nginx,env=production
+
+# Combine filters
+./pod-ashiato --namespace default --label app=backend --interval 2m
 ```
 
 ### In a Kubernetes Cluster
@@ -62,6 +74,9 @@ You can also check the `deploy` directory for example manifests.
 - `--kubeconfig`: Path to the kubeconfig file (default: `~/.kube/config`)
 - `--interval`: Interval between pod checks (default: 30s)
 - `--oneshot`: Run only once and exit (default: false)
+- `--namespace`: Filter pods by namespace (default: all namespaces)
+- `--name`: Filter pods by name (exact match)
+- `--label`: Filter pods by label selector (e.g., 'app=nginx,env=prod')
 
 ## Output Format
 

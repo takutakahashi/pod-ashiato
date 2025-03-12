@@ -18,9 +18,12 @@ import (
 )
 
 var (
-	kubeconfig string
-	interval   time.Duration
-	oneshot    bool
+	kubeconfig    string
+	interval      time.Duration
+	oneshot       bool
+	namespace     string
+	podName       string
+	labelSelector string
 )
 
 func init() {
@@ -31,6 +34,9 @@ func init() {
 	}
 	flag.DurationVar(&interval, "interval", 30*time.Second, "interval between pod checks")
 	flag.BoolVar(&oneshot, "oneshot", false, "run only once and exit")
+	flag.StringVar(&namespace, "namespace", "", "filter pods by namespace (default: all namespaces)")
+	flag.StringVar(&podName, "name", "", "filter pods by name")
+	flag.StringVar(&labelSelector, "label", "", "filter pods by label selector (e.g. 'app=nginx,env=prod')")
 }
 
 func main() {
@@ -64,7 +70,15 @@ func main() {
 	}
 
 	// コントローラーの初期化
-	podController := controller.NewPodController(clientset, logger, interval)
+	podController := controller.NewPodController(clientset, logger, interval, namespace, podName, labelSelector)
+
+	// ログフィルター情報
+	if namespace != "" || podName != "" || labelSelector != "" {
+		logger.Info("Using pod filters", 
+			zap.String("namespace", namespace),
+			zap.String("podName", podName),
+			zap.String("labelSelector", labelSelector))
+	}
 
 	// シグナルハンドリングの設定
 	ctx, cancel := context.WithCancel(context.Background())

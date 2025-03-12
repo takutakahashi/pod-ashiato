@@ -14,9 +14,12 @@ import (
 
 // PodController はPodの情報を収集・記録するコントローラーです
 type PodController struct {
-	clientset *kubernetes.Clientset
-	logger    *zap.Logger
-	interval  time.Duration
+	clientset  *kubernetes.Clientset
+	logger     *zap.Logger
+	interval   time.Duration
+	namespace  string
+	podName    string
+	labelSelector string
 }
 
 // PodInfo はPodのノード情報を含む構造体です
@@ -38,11 +41,14 @@ type PodCondition struct {
 }
 
 // NewPodController は新しいPodControllerを作成します
-func NewPodController(clientset *kubernetes.Clientset, logger *zap.Logger, interval time.Duration) *PodController {
+func NewPodController(clientset *kubernetes.Clientset, logger *zap.Logger, interval time.Duration, namespace string, podName string, labelSelector string) *PodController {
 	return &PodController{
-		clientset: clientset,
-		logger:    logger,
-		interval:  interval,
+		clientset:     clientset,
+		logger:        logger,
+		interval:      interval,
+		namespace:     namespace,
+		podName:       podName,
+		labelSelector: labelSelector,
 	}
 }
 
@@ -68,11 +74,32 @@ func (c *PodController) RunOnce(ctx context.Context) error {
 	return c.logPodNodeInfo(ctx)
 }
 
-// logPodNodeInfo はすべてのPodのノード情報をログに出力します
+// logPodNodeInfo はフィルター条件に一致するPodのノード情報をログに出力します
 func (c *PodController) logPodNodeInfo(ctx context.Context) error {
-	pods, err := c.clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	// フィールドセレクターの構築
+	fieldSelector := ""
+	if c.podName != "" {
+		fieldSelector = fmt.Sprintf("metadata.name=%s", c.podName)
+	}
+
+	// ListOptionsの構築
+	listOptions := metav1.ListOptions{
+		FieldSelector: fieldSelector,
+		LabelSelector: c.labelSelector,
+	}
+
+	// Podのリストを取得
+	pods, err := c.clientset.CoreV1().Pods(c.namespace).List(ctx, listOptions)
 	if err != nil {
 		return fmt.Errorf("failed to list pods: %w", err)
+	}
+
+	if len(pods.Items) == 0 {
+		c.logger.Info("No pods found matching the specified filters",
+			zap.String("namespace", c.namespace),
+			zap.String("podName", c.podName),
+			zap.String("labelSelector", c.labelSelector))
+		return nil
 	}
 
 	for _, pod := range pods.Items {
