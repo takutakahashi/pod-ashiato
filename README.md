@@ -8,6 +8,7 @@ Pod Ashiato ("足跡" - footprint in Japanese) is a Kubernetes utility that logs
 - Outputs structured logs to stdout
 - Can run in one-shot mode or continuously with a configurable interval
 - Works both in-cluster (as a pod) or out-of-cluster (from your local machine)
+- Automatically published to GitHub Container Registry (ghcr.io)
 
 ## Usage
 
@@ -31,7 +32,30 @@ From your local machine:
 
 ### In a Kubernetes Cluster
 
-You can deploy pod-ashiato as a pod in your cluster. Check the `deploy` directory for example manifests.
+You can deploy pod-ashiato as a pod in your cluster using the pre-built container image from GitHub Container Registry:
+
+```bash
+# Update your deployment manifest to use the ghcr.io image
+# Example:
+kubectl apply -f deploy/manifests/deployment.yaml
+```
+
+#### Using ghcr.io Images
+
+The container images are automatically published to GitHub Container Registry when a new release is created:
+
+```bash
+# Pull the latest released version
+docker pull ghcr.io/takutakahashi/pod-ashiato:latest
+
+# Pull a specific version
+docker pull ghcr.io/takutakahashi/pod-ashiato:v1.0.0
+
+# Use in Kubernetes manifest
+# image: ghcr.io/takutakahashi/pod-ashiato:v1.0.0
+```
+
+You can also check the `deploy` directory for example manifests.
 
 ## Command Line Options
 
@@ -60,3 +84,8 @@ The tool outputs JSON logs to stdout with the following structure:
   ]
 }
 ```
+
+## Documentation
+
+- [Architecture](ARCH.md) - Technical architecture and design decisions
+- [Release Process](docs/RELEASE.md) - How releases are managed and automated

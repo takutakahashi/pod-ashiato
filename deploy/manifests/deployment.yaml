@@ -46,7 +46,7 @@ spec:
       serviceAccountName: pod-ashiato
       containers:
       - name: pod-ashiato
-        image: pod-ashiato:latest  # Replace with your image
+        image: ghcr.io/takutakahashi/pod-ashiato:latest  # Use the published image
         args:
         - --interval=1m
         resources:
